@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOE K6 - 104 CÂU GIỚI TỪ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Nunito', sans-serif; background-color: #f1f5f9; margin: 0; }
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+      .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+      @keyframes slideUp { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      .animate-slide-up { animation: slideUp 0.2s ease-out forwards; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body class="antialiased text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      const GameState = { START: 'START', PLAYING: 'PLAYING', FINISHED: 'FINISHED' };
+
+      const RAW_QUESTIONS = [
+        { q: "Do you enjoy driving____ night?", o: ["in", "during", "at", "on"], a: "at", h: "at night: vào ban đêm", t: "Bạn có thích lái xe vào ban đêm không?" },
+        { q: "I’m taking my driving test _____ 4.30_____ July 3rd.", o: ["in/at", "at/in", "at/on", "on/at"], a: "at/on", h: "at + giờ, on + ngày tháng", t: "Tôi sẽ thi lấy bằng lái xe vào lúc 4 giờ 30 ngày 3 tháng 7." },
+        { q: "He was born____ 1900 and died____ 1972.", o: ["in/in", "in/on", "from/to", "in/on"], a: "in/in", h: "in + năm", t: "Ông ấy sinh năm 1900 và mất năm 1972." },
+        { q: "____ the end of the film I felt very sad.", o: ["on", "towards", "at", "in"], a: "at", h: "at the end of: vào lúc kết thúc", t: "Vào cuối bộ phim, tôi cảm thấy rất buồn." },
+        { q: "I hated school at first, but_____ the end I quite enjoyed it.", o: ["in", "at", "of", "to"], a: "in", h: "in the end: cuối cùng, rốt cuộc", t: "Lúc đầu tôi ghét đi học, nhưng cuối cùng tôi lại khá thích nó." },
+        { q: "They’re going to Italy____ the end of next week.", o: ["at", "in", "on", "from"], a: "at", h: "at the end of: vào cuối của...", t: "Họ sẽ đi Ý vào cuối tuần tới." },
+        { q: "Some people were talking in the cinema____ the film.", o: ["during", "in", "with", "over"], a: "during", h: "during: trong suốt (sự kiện)", t: "Một số người đã nói chuyện trong rạp khi bộ phim đang chiếu." },
+        { q: "We’ve been waiting_____ almost an hour.", o: ["in", "during", "since", "for"], a: "for", h: "for + khoảng thời gian", t: "Chúng tôi đã đợi gần một tiếng đồng hồ rồi." },
+        { q: "They hope to finish the job____ Thursday next week", o: ["on", "at", "for", "by"], a: "by", h: "by: trước/muộn nhất là...", t: "Họ hy vọng sẽ hoàn thành công việc trước thứ Năm tuần sau." },
+        { q: "I’ve known her_____ three months.", o: ["since", "for", "in", "during"], a: "for", h: "for + khoảng thời gian", t: "Tôi đã biết cô ấy được ba tháng rồi." },
+        { q: "My grandparents visited Edinburgh______ two weeks in 1980.", o: ["since", "in", "from", "for"], a: "for", h: "for + khoảng thời gian", t: "Ông bà tôi đã đến thăm Edinburgh trong hai tuần vào năm 1980." },
+        { q: "They had been there five years ______ so it wasn’t completely new to them.", o: ["before", "ago", "for", "since"], a: "before", h: "before: trước đó (trong quá khứ)", t: "Họ đã ở đó năm năm trước đó, nên nơi này không hoàn toàn mới lạ với họ." },
+        { q: "My brother has been interested in music_______ quite a long time.", o: ["before", "ago", "for", "since"], a: "for", h: "for a long time", t: "Anh trai tôi đã yêu thích âm nhạc trong một thời gian khá dài." },
+        { q: "He was given his first guitar 20 years______.", o: ["since", "for", "before", "ago"], a: "ago", h: "ago: cách đây (quá khứ đơn)", t: "Anh ấy được tặng cây đàn guitar đầu tiên cách đây 20 năm." },
+        { q: "She has been working for the same newspaper ever ______then", o: ["since", "for", "ago", "before"], a: "since", h: "ever since then: kể từ đó", t: "Cô ấy đã làm việc cho cùng một tờ báo kể từ đó đến nay." },
+        { q: "His car had broken down and he had to come ____ taxi.", o: ["like", "in", "by", "on"], a: "by", h: "by + phương tiện", t: "Xe của anh ấy bị hỏng và anh ấy đã phải đi bằng taxi." },
+        { q: "The journey takes 10 minutes by bus and about 25 minutes ______foot.", o: ["on", "in", "by", "at"], a: "on", h: "on foot: đi bộ", t: "Hành trình mất 10 phút đi xe buýt và khoảng 25 phút đi bộ." },
+        { q: "They are very proud______ their children.", o: ["of", "with", "from", "for"], a: "of", h: "proud of: tự hào về", t: "Họ rất tự hào về những đứa con của mình." },
+        { q: "Are you worried ______ yor driving test?", o: ["for", "with", "by", "about"], a: "about", h: "worried about: lo lắng về", t: "Bạn có lo lắng về kỳ thi sát hạch lái xe của mình không?" },
+        { q: "You’re very good _____ explaining things.", o: ["on", "about", "in", "at"], a: "at", h: "good at: giỏi về", t: "Bạn rất giỏi trong việc giải thích mọi thứ." },
+        { q: "Sydney in Australia is famous _____ its Opera House.", o: ["for", "about", "with", "from"], a: "for", h: "famous for: nổi tiếng vì", t: "Sydney ở Úc nổi tiếng với Nhà hát Opera." },
+        { q: "She’s quite capable____ doing the job.", o: ["in", "at", "on", "of"], a: "of", h: "capable of: có khả năng", t: "Cô ấy hoàn toàn có khả năng thực hiện công việc đó." },
+        { q: "We’re getting really excited_____ our holiday.", o: ["about", "of", "in", "for"], a: "about", h: "excited about: hào hứng về", t: "Chúng tôi đang thực sự hào hứng về kỳ nghỉ của mình." },
+        { q: "Are you interested_____ playing tennis tomorrow?", o: ["in", "at", "on", "of"], a: "in", h: "interested in: thích thú", t: "Bạn có hứng thú chơi tennis vào ngày mai không?" },
+        { q: "He’s not very keen ____ football.", o: ["on", "at", "with", "for"], a: "on", h: "keen on: say mê", t: "Anh ấy không mặn mà lắm với môn bóng đá." },
+        { q: "It was very kind ____ them to give us a lift to the station.", o: ["of", "to", "in", "at"], a: "of", h: "kind of someone: ai đó thật tốt", t: "Họ thật tốt bụng khi cho chúng tôi đi nhờ ra ga." },
+        { q: "Are you afraid____ flying?", o: ["of", "about", "at", "with"], a: "of", h: "afraid of: sợ cái gì", t: "Bạn có sợ đi máy bay không?" },
+        { q: "The garden is full____ roses.", o: ["of", "by", "with", "for"], a: "of", h: "full of: đầy...", t: "Khu vườn đầy hoa hồng." },
+        { q: "We’re a bit short ___ petrol.", o: ["about", "of", "in", "for"], a: "of", h: "short of: thiếu...", t: "Chúng tôi đang hơi thiếu xăng." },
+        { q: "I’m not very good_____ drawing.", o: ["at", "in", "for", "on"], a: "at", h: "good at: giỏi (kỹ năng)", t: "Tôi không giỏi vẽ cho lắm." },
+        { q: "My grandparents are very fond_____ their old cat.", o: ["of", "with", "at", "by"], a: "of", h: "fond of: yêu thích", t: "Ông bà tôi rất yêu quý con mèo già của họ." },
+        { q: "Cricket is quite different____ baseball.", o: ["for", "with", "to", "from"], a: "from", h: "different from: khác với", t: "Môn Cricket khá khác so với bóng chày." },
+        { q: "Your hairstyle is quite similar ____mine.", o: ["to", "from", "with", "for"], a: "to", h: "similar to: giống với", t: "Kiểu tóc của bạn khá giống với của tôi." },
+        { q: "She was very angry____ me for losing her key.", o: ["with", "for", "about", "to"], a: "with", h: "angry with: giận ai", t: "Cô ấy đã rất giận tôi vì làm mất chìa khóa của cô ấy." },
+        { q: "What are the main differences_____ the two countries?", o: ["into", "for", "with", "between"], a: "between", h: "difference between: sự khác nhau giữa", t: "Sự khác biệt chính giữa hai quốc gia này là gì?" },
+        { q: "The book, Gone With the Wind, was written _____ Margaret Mitchell.", o: ["by", "of", "with", "to"], a: "by", h: "written by: viết bởi", t: "Cuốn sách Cuốn theo chiều gió được viết bởi Margaret Mitchell." },
+        { q: "This car isn’t my. It belongs ___ Mike.", o: ["to", "of", "at", "for"], a: "to", h: "belong to: thuộc về", t: "Chiếc xe này không phải của tôi. Nó thuộc về Mike." },
+        { q: "Selfish people only care_____ themselves.", o: ["about", "for", "after", "to"], a: "about", h: "care about: quan tâm", t: "Những người ích kỷ chỉ quan tâm đến bản thân họ." },
+        { q: "I won’t tell anyone what happened. You can rely___ me.", o: ["at", "on", "in", "of"], a: "on", h: "rely on: tin cậy", t: "Tôi sẽ không nói với ai chuyện đã xảy ra. Bạn có thể tin tưởng tôi." },
+        { q: "She apologized___ me for losing her temper.", o: ["at", "towards", "to", "for"], a: "to", h: "apologize to: xin lỗi ai", t: "Cô ấy đã xin lỗi tôi vì đã mất bình tĩnh." },
+        { q: "I’ve written to the company and applied _____the job.", o: ["for", "about", "of", "with"], a: "for", h: "apply for: nộp đơn", t: "Tôi đã viết thư cho công ty và nộp đơn xin việc." },
+        { q: "Mrs. Woods suffers ______ bronchitis.", o: ["from", "with", "by", "to"], a: "from", h: "suffer from: bị bệnh gì", t: "Bà Woods bị bệnh viêm phế quản." },
+        { q: "My grandfather died_____ old age.", o: ["at", "of", "in", "to"], a: "of", h: "die of: chết vì (lý do tự nhiên)", t: "Ông tôi mất vì tuổi già." },
+        { q: "We’re thinking_____ going to the cinema.", o: ["of", "for", "in", "to"], a: "of", h: "think of: nghĩ về", t: "Chúng tôi đang nghĩ đến việc đi xem phim." },
+        { q: "Thank you for looking___ my mother while she was ill.", o: ["for", "after", "at", "in"], a: "after", h: "look after: chăm sóc", t: "Cảm ơn bạn đã chăm sóc mẹ tôi khi bà bị ốm." },
+        { q: "I don’t believe___ horoscopes.", o: ["in", "of", "on", "about"], a: "in", h: "believe in: tin vào", t: "Tôi không tin vào tử vi." },
+        { q: "She dreams____ being an actress one day.", o: ["for", "to", "at", "of"], a: "of", h: "dream of: mơ ước thành", t: "Cô ấy mơ ước một ngày nào đó sẽ trở thành diễn viên." },
+        { q: "I dreamt____ my grandmother last night.", o: ["for", "on", "of", "about"], a: "about", h: "dream about: mơ thấy (khi ngủ)", t: "Đêm qua tôi đã mơ thấy bà của mình." },
+        { q: "We’re are depending ____ you to help us.", o: ["to", "at", "of", "on"], a: "on", h: "depend on: phụ thuộc", t: "Chúng tôi đang trông cậy vào việc bạn giúp đỡ chúng tôi." },
+        { q: "The car went out of petrol and crashed _____the back of a bus.", o: ["into", "onto", "to", "in"], a: "into", h: "crash into: đâm sầm vào", t: "Chiếc xe hết xăng và đâm vào đuôi xe buýt." },
+        { q: "This town remind me_____ the place where I was born.", o: ["for", "to", "behind", "of"], a: "of", h: "remind of: gợi nhớ", t: "Thị trấn này làm tôi nhớ đến nơi tôi đã sinh ra." },
+        { q: "Will you remind Peter _____the party next Sunday?", o: ["about", "for", "with", "on"], a: "about", h: "remind about: nhắc nhở về", t: "Bạn sẽ nhắc Peter về bữa tiệc chủ nhật tới chứ?" },
+        { q: "I congratulated Mary ____getting the new job.", o: ["on", "at", "in", "about"], a: "on", h: "congratulate on: chúc mừng", t: "Tôi đã chúc mừng Mary vì đã có công việc mới." },
+        { q: "I borrowed the umbrella____ a friend of mine.", o: ["until", "from", "to", "in"], a: "from", h: "borrow from: mượn từ", t: "Tôi mượn chiếc ô từ một người bạn của mình." },
+        { q: "They invited us_____ their house for dinner.", o: ["for", "about", "on", "to"], a: "to", h: "invite to: mời đến", t: "Họ mời chúng tôi đến nhà ăn tối." },
+        { q: "We’ve warned him_____ swimming in that part of the river.", o: ["about", "to", "on", "with"], a: "about", h: "warn about: cảnh báo", t: "Chúng tôi đã cảnh báo anh ấy về việc bơi ở đoạn sông đó." },
+        { q: "Could you fill____ the application form, please?", o: ["on", "onto", "for", "in"], a: "in", h: "fill in: điền đơn", t: "Bạn vui lòng điền vào đơn đăng ký nhé?" },
+        { q: "They just kept_____ making a noise even though I’d asked them to stop.", o: ["in", "on", "to", "for"], a: "on", h: "keep on: tiếp tục", t: "Họ cứ tiếp tục gây ồn ào mặc dù tôi đã yêu cầu họ dừng lại." },
+        { q: "The price of coffee has gone____ again.", o: ["down", "away", "up", "off"], a: "up", h: "go up: tăng lên", t: "Giá cà phê lại tăng một lần nữa." },
+        { q: "It’s very important …………….you to revise your lessons every day .", o: ["for", "to", "on", "with"], a: "for", h: "important for: quan trọng cho...", t: "Việc ôn lại bài mỗi ngày là rất quan trọng đối với bạn." },
+        { q: "Attending classes regularly is very important……………..us .", o: ["on", "for", "to", "with"], a: "to", h: "important to: quan trọng với ai", t: "Việc đi học đều đặn là rất quan trọng đối với chúng tôi." },
+        { q: "These people are very kind ……….animals", o: ["to", "for", "with", "by"], a: "to", h: "kind to: tử tế với", t: "Những người này rất tử tế với động vật." },
+        { q: "It is very kind …………….. you to give me a lift.", o: ["to", "of", "on", "for"], a: "of", h: "kind of you: thật tốt bụng", t: "Bạn thật tốt bụng khi cho tôi đi nhờ xe." },
+        { q: "Did you know that Linda was engaged ………….. a friend of mine ?", o: ["to", "at", "on", "for"], a: "to", h: "engaged to: đính hôn", t: "Bạn có biết Linda đã đính hôn với một người bạn của tôi không?" },
+        { q: "My sister was married ………. a successful businessman.", o: ["to", "with", "from", "about"], a: "to", h: "married to: kết hôn với", t: "Em gái tôi đã kết hôn với một doanh nhân thành đạt." },
+        { q: "These days most people are aware ……….the danger of smoking.", o: ["for", "of", "in", "to"], a: "of", h: "aware of: nhận thức", t: "Ngày nay hầu hết mọi người đều nhận thức được sự nguy hiểm của việc hút thuốc." },
+        { q: "We’re short ……………staff in our office at the moment .", o: ["with", "for", "at", "of"], a: "of", h: "short of: thiếu...", t: "Văn phòng chúng tôi hiện đang thiếu nhân sự." },
+        { q: "I found a box full ……… old letters.", o: ["at", "to", "by", "of"], a: "of", h: "full of: đầy...", t: "Tôi tìm thấy một chiếc hộp đầy những lá thư cũ." },
+        { q: "Searching…………alternative fuels is necessary.", o: ["of", "on", "for", "to"], a: "for", h: "search for: tìm kiếm", t: "Việc tìm kiếm các nguồn nhiên liệu thay thế là cần thiết." },
+        { q: "He participated ……….. many cultural activities.", o: ["in", "of", "to", "for"], a: "in", h: "participate in: tham gia", t: "Anh ấy đã tham gia nhiều hoạt động văn hóa." },
+        { q: "Vehicles account …………air pollution in the cities .", o: ["for", "in", "on", "at"], a: "for", h: "account for: giải thích/chiếm", t: "Các phương tiện giao thông gây ra phần lớn ô nhiễm không khí trong thành phố." },
+        { q: "If you smoke , there ‘s a greater chance that you’ll die…………lung cancer.", o: ["to", "of", "for", "with"], a: "of", h: "die of: chết vì...", t: "Nếu bạn hút thuốc, khả năng bạn chết vì ung thư phổi sẽ cao hơn." },
+        { q: "We live ……… food .", o: ["on", "in", "at", "for"], a: "on", h: "live on: sống dựa vào", t: "Chúng ta sống dựa vào thức ăn." },
+        { q: "Don’t rely……………..him . He is unreliable .", o: ["at", "for", "on", "to"], a: "on", h: "rely on: tin cậy", t: "Đừng tin vào anh ta. Anh ta không đáng tin cậy đâu." },
+        { q: "You must concentrate ……………..your study .", o: ["for", "in", "with", "on"], a: "on", h: "concentrate on: tập trung", t: "Bạn phải tập trung vào việc học của mình." },
+        { q: "We tried to get …………… our problems.", o: ["for", "of", "to", "over"], a: "over", h: "get over: vượt qua", t: "Chúng tôi đã cố gắng vượt qua những vấn đề của mình." },
+        { q: "The pilots will use English to ask ………… landing instructions.", o: ["for", "on", "to", "at"], a: "for", h: "ask for: yêu cầu", t: "Các phi công sẽ sử dụng tiếng Anh để yêu cầu hướng dẫn hạ cánh." },
+        { q: "Whom will I have to report ………….?", o: ["for", "at", "to", "in"], a: "to", h: "report to: báo cáo ai", t: "Tôi sẽ phải báo cáo cho ai?" },
+        { q: "People believed that our natural resources could never be used …………..", o: ["on", "out", "up", "at"], a: "up", h: "use up: dùng hết", t: "Người ta tin rằng tài nguyên thiên nhiên của chúng ta không bao giờ có thể bị cạn kiệt." },
+        { q: "Water runs …… and take the soil …… ..it.", o: ["off - with", "out - on", "off - with"], a: "off - with", h: "run off: chảy đi", t: "Nước chảy đi và mang theo đất theo nó." },
+        { q: "We must put the metal back ………use .", o: ["to", "into", "in", "for"], a: "into", h: "put into use: đưa vào sử dụng", t: "Chúng ta phải đưa kim loại trở lại sử dụng." },
+        { q: "Would you care ………….. a drink ?", o: ["for", "about", "on", "at"], a: "for", h: "care for: muốn dùng (mời)", t: "Bạn có muốn dùng một món đồ uống không?" },
+        { q: "Carbon combined with oxygen turns ………… carbon dioxide.", o: ["to", "into", "with", "in"], a: "into", h: "turn into: biến thành", t: "Cacbon kết hợp với oxy biến thành khí cacbonic." },
+        { q: "On arriving ……….London , he found another explanation .", o: ["to", "in", "at", "for"], a: "at", h: "arrive at: đến (nơi cụ thể)", t: "Khi đến London, anh ấy đã tìm thấy một cách giải thích khác." },
+        { q: "The man spoke ……….. the dog with the sound of whip-lashes.", o: ["with", "to", "at", "for"], a: "to", h: "speak to: nói với", t: "Người đàn ông nói chuyện với chú chó bằng âm thanh của những nhát roi." },
+        { q: "We want to help Mum out…………the money at home .", o: ["for", "with", "at", "to"], a: "with", h: "help with: giúp việc gì", t: "Chúng tôi muốn giúp mẹ việc tiền nong ở nhà." },
+        { q: "What can be inferred………..the apparent ease of the transition ?", o: ["to", "from", "at", "by"], a: "from", h: "infer from: suy luận", t: "Điều gì có thể được suy ra từ sự dễ dàng rõ ràng của quá trình chuyển đổi?" },
+        { q: "…………….what age did you leave school ?", o: ["At", "On", "By", "In"], a: "At", h: "at what age: ở tuổi bao nhiêu", t: "Bạn đã nghỉ học ở độ tuổi nào?" },
+        { q: "Why can’t you do the work straight …………..?", o: ["away", "on", "to", "in"], a: "away", h: "straight away: ngay lập tức", t: "Tại sao bạn không thể làm công việc ngay lập tức?" },
+        { q: "………….the whole, they tend to be informal .", o: ["In", "On", "At", "With"], a: "On", h: "on the whole: nhìn chung", t: "Nhìn chung, họ có xu hướng không chính thức." },
+        { q: "He was introduced ……………my mother.", o: ["with", "to", "for", "at"], a: "to", h: "introduce to: giới thiệu", t: "Anh ấy đã được giới thiệu với mẹ tôi." },
+        { q: "They usually shake hands …………business occasions.", o: ["on", "at", "for", "in"], a: "on", h: "on occasions: vào dịp", t: "Họ thường bắt tay nhau vào những dịp công việc." },
+        { q: "They provided the children …………… clothes and food.", o: ["with", "for", "on", "to"], a: "with", h: "provide with: cung cấp", t: "Họ đã cung cấp quần áo và thức ăn cho trẻ em." },
+        { q: "Who does this car belong …………?", o: ["to", "at", "in", "on"], a: "to", h: "belong to: thuộc về", t: "Chiếc xe này thuộc về ai?" },
+        { q: "Many people use English ………… their foreign language.", o: ["like", "as", "for", "in"], a: "as", h: "use as: dùng như là", t: "Nhiều người sử dụng tiếng Anh như là ngoại ngữ của họ." },
+        { q: "She becomes bored ………… working here.", o: ["with", "to", "on", "for"], a: "with", h: "bored with: chán nản", t: "Cô ấy trở nên chán làm việc ở đây." },
+        { q: "He is often late ………… school.", o: ["for", "at", "in", "to"], a: "for", h: "late for: trễ...", t: "Anh ấy thường xuyên đi học muộn." },
+        { q: "Many people are involved ……… the use of English.", o: ["to", "with", "in", "at"], a: "in", h: "involved in: liên quan", t: "Nhiều người có liên quan đến việc sử dụng tiếng Anh." },
+        { q: "You should go ………… the composition before you hand it in.", o: ["on", "over", "with", "at"], a: "over", h: "go over: xem lại", t: "Bạn nên xem lại bài luận trước khi nộp." },
+        { q: "I think everything is going …………… nicely.", o: ["along", "off", "down", "up"], a: "along", h: "go along: tiến triển", t: "Tôi nghĩ mọi thứ đang diễn ra tốt đẹp." },
+        { q: "I have to work harder to keep pace ……… my classmates.", o: ["on", "in", "at", "with"], a: "with", h: "keep pace with: bắt kịp", t: "Tôi phải học tập chăm chỉ hơn để bắt kịp các bạn cùng lớp." },
+        { q: "When I entered the room, I caught sight ……….. someone in the kitchen.", o: ["for", "to", "of", "with"], a: "of", h: "catch sight of: bắt gặp", t: "Khi tôi bước vào phòng, tôi chợt thấy ai đó trong bếp." },
+        { q: "The government is determined to put an end …………… corruption.", o: ["for", "to", "of", "with"], a: "to", h: "put an end to: chấm dứt", t: "Chính phủ quyết tâm chấm dứt tình trạng tham nhũng." },
+        { q: "We’ll leave ………………..Monday .", o: ["at", "on", "with", "to"], a: "on", h: "on + thứ: vào ngày...", t: "Chúng tôi sẽ rời đi vào thứ Hai." }
+      ];
+
+      const QUIZ_DATA = RAW_QUESTIONS.map((item, index) => ({
+        id: index + 1,
+        questionText: item.q,
+        options: item.o,
+        correctAnswer: item.a,
+        hint: item.h,
+        translation: item.t,
+        explanation: `Ghi nhớ: ${item.h}`
+      }));
+
+      const Button = ({ children, variant = 'primary', className = '', ...props }) => {
+        const variants = {
+          primary: "bg-blue-600 text-white shadow hover:bg-blue-700 active:scale-95",
+          outline: "bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-400 active:scale-95",
+          danger: "bg-rose-500 text-white hover:bg-rose-600 active:scale-95",
+        };
+        return <button className={`px-5 py-2 rounded-xl font-bold transition-all disabled:opacity-40 ${variants[variant]} ${className}`} {...props}>{children}</button>;
+      };
+
+      const StartScreen = ({ onStart }) => {
+        const [name, setName] = useState('');
+        return (
+          <div className="min-h-screen bg-blue-600 flex items-center justify-center p-4">
+            <div className="bg-white p-6 sm:p-10 rounded-[2rem] shadow-2xl max-w-sm w-full text-center animate-slide-up">
+              <div className="text-5xl mb-3">📖</div>
+              <h1 className="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tight">IOE K6 Quiz</h1>
+              <p className="text-slate-400 font-bold mb-6 tracking-widest text-[9px] uppercase">104 Câu Hỏi Giới Từ</p>
+              <form onSubmit={e => { e.preventDefault(); name.trim() && onStart(name); }}>
+                <input type="text" placeholder="Tên của bạn..." value={name} onChange={e => setName(e.target.value)} 
+                  className="w-full p-3 rounded-xl border-2 border-slate-100 mb-4 text-lg font-bold text-center outline-none focus:border-blue-500 transition-all" required />
+                <Button type="submit" className="w-full text-lg py-3 !rounded-xl uppercase tracking-widest">BẮT ĐẦU</Button>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      const QuestionCard = ({ question, onAnswer, isAnswered, userAnswer }) => {
+        const [showHint, setShowHint] = useState(false);
+        const isCorrect = userAnswer && (userAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase());
+        useEffect(() => { setShowHint(false); }, [question.id]);
+
+        return (
+          <div className="w-full max-w-xl mx-auto animate-fade-in px-2">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-5 sm:p-6 relative">
+              <div className="flex justify-between items-center mb-4">
+                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest uppercase">Câu {question.id}</span>
+                {!isAnswered && (
+                  <button onClick={() => setShowHint(!showHint)} className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                    {showHint ? 'ẨN GỢI Ý' : '💡 GỢI Ý'}
+                  </button>
+                )}
+              </div>
+              {showHint && !isAnswered && (
+                <div className="mb-3 p-2 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 font-bold text-[11px] animate-slide-up">{question.hint}</div>
+              )}
+              <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-6 leading-snug">{question.questionText}</h2>
+              <div className="grid grid-cols-1 gap-2">
+                {question.options.map((opt, idx) => {
+                  const isCurCorrect = opt.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
+                  const isUserSel = opt.trim().toLowerCase() === (userAnswer ? userAnswer.trim().toLowerCase() : "");
+                  let style = "bg-slate-50 border-slate-100 hover:border-blue-300";
+                  if (isAnswered) {
+                    if (isCurCorrect) style = "bg-emerald-50 border-emerald-500 text-emerald-900 ring-1 ring-emerald-100";
+                    else if (isUserSel) style = "bg-rose-50 border-rose-500 text-rose-900 ring-1 ring-rose-100";
+                    else style = "opacity-40 border-slate-100";
+                  }
+                  return (
+                    <button key={idx} onClick={() => !isAnswered && onAnswer(opt)} disabled={isAnswered} 
+                      className={`p-3 rounded-lg text-left border-2 transition-all flex items-center gap-2 ${style}`}>
+                      <div className={`w-6 h-6 rounded flex items-center justify-center font-black text-[10px] ${isAnswered && isCurCorrect ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                        {String.fromCharCode(65+idx)}
+                      </div>
+                      <span className="text-base font-bold">{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {isAnswered && (
+                <div className={`mt-4 p-3 rounded-xl border-l-[6px] animate-slide-up ${isCorrect ? 'bg-emerald-50 border-emerald-500' : 'bg-rose-50 border-rose-500'}`}>
+                  <h3 className={`font-black text-sm mb-1 ${isCorrect ? 'text-emerald-800' : 'text-rose-800'}`}>{isCorrect ? 'CHÍNH XÁC!' : 'SAI MẤT RỒI!'}</h3>
+                  <div className="text-slate-800 font-bold text-[13px] leading-relaxed mb-2">
+                    <span className="text-blue-600 uppercase text-[10px] font-black mr-1">DỊCH CÂU:</span> {question.translation}
+                  </div>
+                  <p className="text-slate-500 font-bold text-[11px]">{question.explanation}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      const ResultScreen = ({ userName, userAnswers, onRetryAll, onRetryWrong }) => {
+        const correctCount = userAnswers.filter(a => a.isCorrect).length;
+        const total = userAnswers.length;
+        const score = correctCount * 10;
+        const percent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+        const wrongAnswers = userAnswers.filter(a => !a.isCorrect);
+
+        return (
+          <div className="min-h-screen bg-slate-50 flex flex-col items-center p-3 py-6">
+            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-lg w-full text-center border-2 border-white animate-fade-in mb-6">
+              <h2 className="text-xl font-black text-slate-800 mb-3 uppercase">KẾT QUẢ</h2>
+              <div className="text-6xl font-black text-blue-600 mb-1">{percent}%</div>
+              <p className="text-slate-500 font-bold mb-6 text-sm">Người chơi: <span className="text-blue-600">{userName}</span></p>
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                  <div className="text-xl font-black text-blue-600">{score}</div>
+                  <div className="text-[8px] font-black uppercase text-blue-700 tracking-widest mt-0.5">ĐIỂM</div>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                  <div className="text-xl font-black text-emerald-600">{correctCount}</div>
+                  <div className="text-[8px] font-black uppercase text-emerald-700 tracking-widest mt-0.5">ĐÚNG</div>
+                </div>
+                <div className="bg-rose-50 p-3 rounded-xl border border-rose-100">
+                  <div className="text-xl font-black text-rose-500">{total - correctCount}</div>
+                  <div className="text-[8px] font-black uppercase text-rose-700 tracking-widest mt-0.5">SAI</div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button onClick={onRetryAll} className="w-full py-3 text-base">LÀM LẠI TẤT CẢ</Button>
+                {wrongAnswers.length > 0 && <Button onClick={onRetryWrong} variant="danger" className="w-full py-3 text-base">LÀM LẠI CÂU SAI</Button>}
+              </div>
+            </div>
+            {wrongAnswers.length > 0 && (
+              <div className="w-full max-w-lg animate-slide-up">
+                <h3 className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest text-center">Ôn lại các câu sai</h3>
+                <div className="space-y-2">
+                  {wrongAnswers.map((ans, i) => {
+                    const q = QUIZ_DATA.find(x => x.id === ans.id);
+                    return q ? (
+                      <div key={i} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                        <div className="flex justify-between items-start mb-1"><span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">CÂU {q.id}</span></div>
+                        <div className="font-bold text-slate-800 mb-3 text-base leading-tight">{q.questionText}</div>
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          <div className="p-2 bg-rose-50 rounded-lg border border-rose-100"><div className="text-[7px] font-black text-rose-400 uppercase mb-0.5">BẠN CHỌN:</div><div className="text-xs font-bold text-rose-800">{ans.val || "-"}</div></div>
+                          <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><div className="text-[7px] font-black text-emerald-400 uppercase mb-0.5">ĐÁP ÁN ĐÚNG:</div><div className="text-xs font-bold text-emerald-800">{q.correctAnswer}</div></div>
+                        </div>
+                        <div className="text-[11px] text-slate-800 font-bold bg-slate-50 p-2 rounded-lg mb-1"><span className="text-blue-500 uppercase text-[8px] font-black mr-1">DỊCH:</span> {q.translation}</div>
+                        <div className="text-[10px] text-slate-500 font-bold italic">Ghi nhớ: {q.hint}</div>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [gameState, setGameState] = useState(GameState.START);
+        const [name, setName] = useState('');
+        const [activeQuestions, setActiveQuestions] = useState(QUIZ_DATA);
+        const [currentIndex, setCurrentIndex] = useState(0);
+        const [userAnswers, setUserAnswers] = useState([]);
+        const [showGrid, setShowGrid] = useState(false);
+
+        const handleAnswer = (val) => {
+          const q = activeQuestions[currentIndex];
+          const isCorrect = val.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+          setUserAnswers(prev => [...prev.filter(a => a.id !== q.id), { id: q.id, val, isCorrect }]);
+        };
+
+        const onRetryWrong = () => {
+          const wrongIds = userAnswers.filter(a => !a.isCorrect).map(a => a.id);
+          setActiveQuestions(QUIZ_DATA.filter(q => wrongIds.includes(q.id)));
+          setUserAnswers([]); setCurrentIndex(0); setGameState(GameState.PLAYING);
+        };
+
+        const onRetryAll = () => { setActiveQuestions(QUIZ_DATA); setUserAnswers([]); setCurrentIndex(0); setGameState(GameState.PLAYING); };
+
+        if (gameState === GameState.START) return <StartScreen onStart={(n) => { setName(n); setGameState(GameState.PLAYING); }} />;
+        if (gameState === GameState.FINISHED) return <ResultScreen userName={name} userAnswers={userAnswers} onRetryAll={onRetryAll} onRetryWrong={onRetryWrong} />;
+
+        const currentQ = activeQuestions[currentIndex];
+        const answer = userAnswers.find(a => a.id === currentQ.id);
+        const score = userAnswers.filter(a => a.isCorrect).length * 10;
+
+        return (
+          <div className="min-h-screen pb-20 flex flex-col items-center">
+            <header className="w-full bg-white border-b p-2 sticky top-0 z-40 flex justify-between items-center shadow-sm max-w-xl mx-auto rounded-b-xl">
+              <div className="flex items-center gap-2">
+                <div className="bg-blue-600 text-white w-7 h-7 rounded flex items-center justify-center font-black text-[10px]">👤</div>
+                <span className="font-black text-slate-800 text-xs truncate max-w-[80px]">{name}</span>
+              </div>
+              <div className="flex gap-3 items-center">
+                <div className="text-center"><div className="text-[7px] font-black text-slate-400 uppercase tracking-widest">ĐIỂM</div><div className="text-base font-black text-blue-600 leading-none">{score}</div></div>
+                <div className="text-center"><div className="text-[7px] font-black text-slate-400 uppercase tracking-widest">CÂU</div><div className="text-base font-black text-blue-600 leading-none">{currentIndex + 1}/{activeQuestions.length}</div></div>
+                <button onClick={() => setShowGrid(true)} className="bg-slate-100 p-1.5 rounded-lg hover:bg-blue-50 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+              </div>
+            </header>
+            <div className="w-full max-w-xl px-4 mt-3">
+               <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden"><div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${((currentIndex + 1) / activeQuestions.length) * 100}%` }}></div></div>
+            </div>
+            <main className="w-full mt-3"><QuestionCard question={currentQ} onAnswer={handleAnswer} isAnswered={!!answer} userAnswer={answer?.val} /></main>
+            <footer className="fixed bottom-0 left-0 right-0 p-3 bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-center z-40 shadow-lg">
+              <div className="max-w-xl w-full flex gap-2">
+                <Button variant="outline" onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0}>←</Button>
+                <div className="flex-1">
+                  {answer ? (
+                    <Button onClick={() => currentIndex === activeQuestions.length - 1 ? setGameState(GameState.FINISHED) : setCurrentIndex(currentIndex + 1)} className="w-full uppercase text-xs tracking-widest">{currentIndex === activeQuestions.length - 1 ? 'KẾT THÚC' : 'TIẾP THEO'}</Button>
+                  ) : (
+                    <div className="flex gap-2"><Button variant="outline" onClick={() => setCurrentIndex(Math.min(activeQuestions.length - 1, currentIndex + 1))} className="flex-1 text-xs">BỎ QUA</Button><Button onClick={() => window.confirm("Nộp bài?") && setGameState(GameState.FINISHED)} variant="danger" className="flex-1 text-xs uppercase">NỘP</Button></div>
+                  )}
+                </div>
+                <Button variant="outline" onClick={() => setCurrentIndex(Math.min(activeQuestions.length - 1, currentIndex + 1))} disabled={currentIndex === activeQuestions.length - 1 || !!answer}>→</Button>
+              </div>
+            </footer>
+            {showGrid && (
+              <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowGrid(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs max-h-[60vh] flex flex-col overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+                  <div className="p-4 border-b flex justify-between items-center"><h2 className="text-sm font-black text-slate-800 uppercase">Danh sách</h2><button onClick={() => setShowGrid(false)} className="text-lg">✕</button></div>
+                  <div className="flex-1 overflow-y-auto p-3 grid grid-cols-5 gap-1.5 custom-scrollbar">
+                    {activeQuestions.map((q, idx) => {
+                      const ans = userAnswers.find(a => a.id === q.id);
+                      let color = "bg-slate-50 text-slate-300 border-slate-100";
+                      if (idx === currentIndex) color = "ring-2 ring-blue-500 bg-white text-blue-600 border-blue-500 z-10";
+                      else if (ans) color = ans.isCorrect ? "bg-emerald-500 text-white border-emerald-600" : "bg-rose-500 text-white border-rose-600";
+                      return <button key={q.id} onClick={() => { setCurrentIndex(idx); setShowGrid(false); }} className={`h-8 rounded font-black text-[10px] border transition-all ${color}`}>{q.id}</button>;
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+</body>
+</html>
